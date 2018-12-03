@@ -1,3 +1,6 @@
+#slack config
+config.json
+
 #GAE
 .gcloudignore
 appengine_config.py
