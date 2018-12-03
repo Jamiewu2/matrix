@@ -28,6 +28,7 @@ with open("config.json") as f:
 
 slack = SlackClient(slack_oauth_token)
 
+
 # api endpoints
 @app.route('/')
 def hello_world():
@@ -66,10 +67,8 @@ def do_matrix(content):
     user_names = list(map(get_name_from_user_id, channel_members))
     rotated_user_names = user_names[1:] + user_names[:1]
     pairs = [(user_names[x], rotated_user_names[x]) for x in range(len(user_names))]
-    payload = {'token': slack_oauth_token,
-               'response_type': 'in_channel',
-               'text': pprint_pairs(pairs),
-               'attachments': []}
+    payload = {'response_type': 'in_channel',
+               'text': pprint_pairs(pairs)}
     requests.post(response_url, json=payload)
     return payload
 
