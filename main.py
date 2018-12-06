@@ -1,11 +1,13 @@
-from myflask.flaskslack import FlaskSlack
-from myslack.slack import ResponseType
+from flask import Flask
+from flaskslack.flaskslack import FlaskSlack
+from flaskslack.slack import ResponseType, Slack
 
-flask_slack = FlaskSlack(__name__)
-slack = flask_slack.slack
+app = Flask(__name__)
+slack = Slack.create()
+flask_slack = FlaskSlack(app, slack)
 
 
-@flask_slack.slack_route('/slack/matrix', response_type=ResponseType.IN_CHANNEL, verify_signature=True)
+@flask_slack.slack_route('/slack/matrix', response_type=ResponseType.IN_CHANNEL, verify_signature=False)
 def do_matrix(content):
     channel_id = content["channel_id"]
     response = slack.try_api_call("conversations.members", channel=channel_id)
@@ -13,8 +15,8 @@ def do_matrix(content):
     user_names = list(map(get_name_from_user_id, channel_members))
     rotated_user_names = user_names[1:] + user_names[:1]
     pairs = [(user_names[x], rotated_user_names[x]) for x in range(len(user_names))]
-    payload = {'text': pprint_pairs(pairs)}
-    return payload
+    text_response = pprint_pairs(pairs)
+    return Slack.create_response(text_response)
 
 
 def pprint_pairs(pairs):
@@ -31,4 +33,4 @@ def get_name_from_user_id(user_id):
 
 
 if __name__ == "__main__":
-    flask_slack.run(host="localhost")
+    app.run(host="localhost")
