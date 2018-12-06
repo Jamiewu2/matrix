@@ -1,15 +1,11 @@
-from flask import Flask
-
 from myflask.flaskslack import FlaskSlack
-from myslack.slack import Slack, ResponseType
+from myslack.slack import ResponseType
 
-app = Flask(__name__)
-slack = Slack.create()
-flask_slack = FlaskSlack(slack)
+flask_slack = FlaskSlack(__name__)
+slack = flask_slack.slack
 
 
-@app.route('/slack/matrix', methods=['POST'])
-@flask_slack.slack_decorator(response_type=ResponseType.IN_CHANNEL)
+@flask_slack.slack_route('/slack/matrix', response_type=ResponseType.IN_CHANNEL, verify_signature=True)
 def do_matrix(content):
     channel_id = content["channel_id"]
     response = slack.try_api_call("conversations.members", channel=channel_id)
@@ -35,4 +31,4 @@ def get_name_from_user_id(user_id):
 
 
 if __name__ == "__main__":
-    app.run(host="localhost")
+    flask_slack.run(host="localhost")

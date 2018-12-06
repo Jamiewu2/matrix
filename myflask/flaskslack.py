@@ -1,7 +1,7 @@
 from threading import Thread
 
 import requests
-from flask import abort, request, jsonify
+from flask import abort, request, jsonify, Flask
 
 from myslack.slack import Slack, ResponseType
 
@@ -58,13 +58,15 @@ def delayed_message(func: callable, response_type: ResponseType):
 
 
 class FlaskSlack:
-    def __init__(self, slack: 'Slack'):
+    def __init__(self, name, slack: 'Slack' = Slack.create()):
+        self.app = Flask(name)
         self.slack = slack
 
     @parameterized_decorator_instance
-    def slack_decorator(self, func: callable, response_type: ResponseType, verify_signature: bool=True):
+    def slack_route(self, func: callable, route, response_type: ResponseType, verify_signature: bool=True):
         """a decorator method that wraps an implementation method to allow for receiving and responding to slack
         slash commands """
+        @self.app.route(route, methods=['POST'])
         def decorator():
             # verify that the request is from slack
             if verify_signature:
@@ -79,7 +81,6 @@ class FlaskSlack:
 
             # verification passed, handle request in another thread
             form_content = request.form
-            response_type_str = response_type.value
             delayed_message_func = delayed_message(func, response_type)
             thread = Thread(target=delayed_message_func, args=(form_content,))
             thread.start()
@@ -87,3 +88,6 @@ class FlaskSlack:
             # immediately return 200
             return jsonify({'response_type': response_type.value})
         return decorator
+
+    def run(self, *args, **kwargs):
+        self.app.run(*args, **kwargs)
