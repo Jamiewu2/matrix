@@ -1,1 +1,4 @@
-flask_slack_template
+flask_slack_template>=0.0.2
+mashumaro
+html-slacker
+bs4
