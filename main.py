@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass, asdict
+from enum import Enum
 from random import shuffle
 from threading import Thread
 from typing import List
@@ -177,6 +178,7 @@ class Trivia(DataClassDictMixin):
                           footer=f"{self.category} | {self.type} | {self.difficulty}")
 
 
+
 @dataclass
 class Cafe(DataClassDictMixin):
     title: str
@@ -194,7 +196,43 @@ def do_action_endpoint(content):
 
 @flask_slack.slack_route('/slack/trivia', response_type=ResponseType.IN_CHANNEL, verify_signature=False)
 def do_trivia(content):
+    category_dict = {
+        'general': 9,
+        'books': 10,
+        'film': 11,
+        'music': 12,
+        'musicals': 13,
+        'tv': 14,
+        'video games': 15,
+        'board games': 16,
+        'science': 17,
+        'computers': 18,
+        'math': 19,
+        'mythology': 20,
+        'sports': 21,
+        'geography': 22,
+        'history': 23,
+        'politics': 24,
+        'art': 25,
+        'celebrities': 26,
+        'animals': 27,
+        'vehicles': 28,
+        'comics': 29,
+        'gadgets': 30,
+        'anime': 31,
+        'cartoons': 32
+    }
+
     request_url = "https://opentdb.com/api.php?amount=1"
+
+    # add category query param
+    category = content["text"].lower()
+    if category and category in category_dict:
+        request_url += f"&category={category_dict[category]}"
+    elif category == "help":
+        help_message = "\n".join([f"/trivia {key}" for key in category_dict])
+        return Slack.create_response(text=help_message)
+
     r = requests.get(request_url)
     trivia_dict = r.json()["results"][0]
     trivia = Trivia.from_dict(trivia_dict)
