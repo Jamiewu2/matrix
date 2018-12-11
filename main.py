@@ -26,18 +26,18 @@ class Trivia(DataClassDictMixin):
     correct_answer: str
     incorrect_answers: List[str]
 
-    def tmp2(self) -> List[Action]:
-        correct_answer = Action(name="c", text=self.correct_answer, value="correct")
-        answers = list(map(lambda x: Action(name="inc", text=x, value="incorrect"), self.incorrect_answers))
+    def create_actions(self) -> List[Action]:
+        correct_answer = Action(name="c", text=self.correct_answer, value="Correct")
+        answers = list(map(lambda x: Action(name="inc", text=x, value="Incorrect"), self.incorrect_answers))
         answers.append(correct_answer)
         shuffle(answers)
         return answers
 
     def as_button_attachment(self) -> ButtonAttachment:
-        return ButtonAttachment(text=HTMLSlacker(self.question).get_output(),
-                          actions=self.tmp2(),
-                          callback_id="trivia_id",
-                          footer=f"{self.category} | {self.type} | {self.difficulty}")
+        return ButtonAttachment(text=self.question,
+                                actions=self.create_actions(),
+                                callback_id="trivia_id",
+                                footer=f"{self.category} | {self.type} | {self.difficulty}")
 
 
 @dataclass
@@ -96,7 +96,10 @@ def do_trivia(content):
 
     r = requests.get(request_url)
     trivia_dict = r.json()["results"][0]
-    trivia = Trivia.from_dict(trivia_dict)
+    trivia_dict_clean = dict((key, HTMLSlacker(value).get_output())
+                             for key, value in trivia_dict.items())
+
+    trivia = Trivia.from_dict(trivia_dict_clean)
     button_attachment = trivia.as_button_attachment()
     return Slack.create_response(text="", attachments=[button_attachment])
 
