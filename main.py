@@ -1,4 +1,5 @@
 import collections
+import json
 from dataclasses import dataclass
 from random import shuffle
 from typing import List
@@ -6,7 +7,7 @@ from typing import List
 import requests
 from bs4 import BeautifulSoup
 from flask import Flask
-from flaskslack.attachment import Attachment, ButtonAttachment, Action
+from flaskslack.attachment import Attachment, ButtonAttachment, Action, Field
 from flaskslack.flaskslack import FlaskSlack
 from flaskslack.slack import ResponseType, Slack
 from htmlslacker import HTMLSlacker
@@ -38,6 +39,7 @@ class Trivia(DataClassDictMixin):
         return ButtonAttachment(text=self.question,
                                 actions=self.create_actions(),
                                 callback_id="trivia_id",
+                                fields=[Field("winners",value=""), Field("losers",value="")],
                                 footer=f"{self.category} | {self.type} | {self.difficulty}")
 
 
@@ -52,8 +54,37 @@ class Cafe(DataClassDictMixin):
 
 @flask_slack.slack_route('/slack/action-endpoint', response_type=ResponseType.EPHEMERAL, empty_immediate_response=True)
 def do_action_endpoint(content):
+    original_message = content["original_message"]
+    user_name = content["user"]["name"]
+
+    fields = original_message["attachments"][0]["fields"]
+    losers_dict = next(x for x in fields if x["title"] == "losers")
+    winners_dict = next(x for x in fields if x["title"] == "winners")
+
+    losers = losers_dict["value"].split(',')
+    winners = winners_dict["value"].split(',')
+
+    people_who_answered = losers + winners
+
     value = content["actions"][0]["value"]
-    return {'text': value, 'replace_original': False}
+
+    if not user_name in people_who_answered:
+        if value == "Incorrect":
+            losers.append(user_name)
+        elif value == "Correct":
+            winners.append(user_name)
+
+    losers_dict["value"] = ','.join(losers)
+    winners_dict["value"] = ','.join(winners)
+
+    new_message = original_message.copy()
+    new_message["fields"] = [losers_dict, winners_dict]
+    new_message["replace_original"] = True
+
+    return new_message
+
+    # value = content["actions"][0]["value"]
+    # return {'text': value, 'replace_original': False}
 
 
 @flask_slack.slack_route('/slack/trivia', response_type=ResponseType.IN_CHANNEL)
