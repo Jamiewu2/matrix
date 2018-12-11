@@ -1,3 +1,4 @@
+import collections
 from dataclasses import dataclass
 from random import shuffle
 from typing import List
@@ -86,7 +87,7 @@ def do_trivia(content):
 
     request_url = "https://opentdb.com/api.php?amount=1"
 
-    # add category query param
+    # add category query param if it exists
     category = content["text"].lower()
     if category and category in category_dict:
         request_url += f"&category={category_dict[category]}"
@@ -96,9 +97,7 @@ def do_trivia(content):
 
     r = requests.get(request_url)
     trivia_dict = r.json()["results"][0]
-    trivia_dict_clean = dict((key, HTMLSlacker(value).get_output())
-                             for key, value in trivia_dict.items())
-
+    trivia_dict_clean = map_nested_dicts(trivia_dict, html_clean)
     trivia = Trivia.from_dict(trivia_dict_clean)
     button_attachment = trivia.as_button_attachment()
     return Slack.create_response(text="", attachments=[button_attachment])
@@ -136,6 +135,28 @@ def do_matrix(content):
     pairs = [(user_names[x], rotated_user_names[x]) for x in range(len(user_names))]
     text_response = pprint_pairs(pairs)
     return Slack.create_response(text_response)
+
+
+def html_clean(obj):
+    if type(obj) is str:
+        return HTMLSlacker(obj).get_output()
+    else:
+        return obj
+
+
+def map_nested_dicts(ob, func):
+    # from https://stackoverflow.com/questions/32935232/python-apply-function-to-values-in-nested-dictionary
+    new_dict = {}
+
+    for k, v in ob.items():
+        if isinstance(v, collections.Mapping):
+            new_dict[k] = map_nested_dicts(v, func)
+        elif isinstance(v, list):
+            new_dict[k] = map(func, v)
+        else:
+            new_dict[k] = func(v)
+
+    return new_dict
 
 
 def pprint_pairs(pairs):
