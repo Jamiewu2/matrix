@@ -2,3 +2,4 @@ flask_slack_template>=0.0.4
 mashumaro
 html-slacker
 bs4
+colorhash

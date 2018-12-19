@@ -6,6 +6,7 @@ from typing import List
 
 import requests
 from bs4 import BeautifulSoup
+from colorhash import ColorHash
 from flask import Flask
 from flaskslack.attachment import Attachment, ButtonAttachment, Action, Field
 from flaskslack.flaskslack import FlaskSlack
@@ -37,6 +38,7 @@ class Trivia(DataClassDictMixin):
 
     def as_button_attachment(self) -> ButtonAttachment:
         return ButtonAttachment(text=self.question,
+                                color=ColorHash(self.category).hex,
                                 actions=self.create_actions(),
                                 callback_id="trivia_id",
                                 fields=[Field("winners",value=""), Field("losers",value="")],
