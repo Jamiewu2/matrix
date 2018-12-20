@@ -57,14 +57,14 @@ class Cafe(DataClassDictMixin):
 @flask_slack.slack_route('/slack/action-endpoint', response_type=ResponseType.EPHEMERAL, empty_immediate_response=True)
 def do_action_endpoint(content):
     original_message = content["original_message"]
-    user_name = content["user"]["name"]
+    user_name = get_name_from_user_id(content["user"]["id"])
 
     fields = original_message["attachments"][0]["fields"]
     losers_dict = next(x for x in fields if x["title"] == "losers")
     winners_dict = next(x for x in fields if x["title"] == "winners")
 
-    losers = losers_dict["value"].split(',')
-    winners = winners_dict["value"].split(',')
+    losers = [] if not losers_dict["value"] else losers_dict["value"].split(',')
+    winners = [] if not winners_dict["value"] else winners_dict["value"].split(',')
 
     people_who_answered = losers + winners
 
