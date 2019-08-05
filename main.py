@@ -70,10 +70,10 @@ def do_action_endpoint(content):
 
     value = content["actions"][0]["value"]
 
-    if user_name == "Nelson Batista":
-        winners.append(user_name)
-    elif not user_name in people_who_answered:
-        if value == "Incorrect":
+    if not user_name in people_who_answered:
+        if user_name == "Nelson Batista":
+            winners.append(user_name)
+        elif value == "Incorrect":
             losers.append(user_name)
         elif value == "Correct":
             winners.append(user_name)
