@@ -1,7 +1,5 @@
 import collections
-import json
 from dataclasses import dataclass
-from random import shuffle
 from typing import List
 
 import requests
@@ -19,7 +17,6 @@ app = Flask(__name__)
 slack = Slack.create()
 flask_slack = FlaskSlack(app, slack)
 
-
 @dataclass
 class Trivia(DataClassDictMixin):
     category: str
@@ -33,7 +30,8 @@ class Trivia(DataClassDictMixin):
         correct_answer = Action(name="c", text=self.correct_answer, value="Correct")
         answers = list(map(lambda x: Action(name="inc", text=x, value="Incorrect"), self.incorrect_answers))
         answers.append(correct_answer)
-        shuffle(answers)
+        # sort answers reverse alphabetically, to put True before False
+        answers.sort(key=lambda action: action.text, reverse=True)
         return answers
 
     def as_button_attachment(self) -> ButtonAttachment:
